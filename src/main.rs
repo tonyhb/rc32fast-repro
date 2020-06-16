@@ -1,19 +1,5 @@
 use std::io::{Cursor, Read};
 use wasm_bindgen::prelude::*;
-use stdweb::console;
-
-#[macro_export]
-#[cfg(target_arch = "wasm32")]
-macro_rules! jserr {
-    ($expression:expr) => {
-        match $expression {
-            Ok(a) => a,
-            Err(e) => {
-                return Err(JsValue::from(format!("{}", e)));
-            }
-        }
-    };
-}
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
@@ -47,7 +33,7 @@ pub struct WasmMain {}
 impl WasmMain {
     pub fn new(data: Vec<u8>) -> () {
         web_sys::console::log_1(&"parsing".into());
-        match Project::parse(data) {
+        match Project::new(data) {
             Ok(p) => {
                 web_sys::console::log_1(&format!("Parsed {} files", p.zip_data.len()).into());
             }
@@ -58,14 +44,12 @@ impl WasmMain {
     }
 }
 
-
 #[cfg(not(target_arch = "wasm32"))]
 pub fn open_zip(filename: String) -> Result<Project, Box<dyn std::error::Error>> {
     let fname = std::path::Path::new(&filename);
     let data = std::fs::read(&fname)?;
     Project::new(data)
 }
-
 
 pub struct Project {
     zip_data: Vec<File>,
@@ -78,27 +62,21 @@ pub struct File {
 
 impl Project {
     pub fn new(zipdata: Vec<u8>) -> Result<Project, Box<dyn std::error::Error>> {
-        Project::parse(zipdata)
-    }
-
-    pub fn parse(zipdata: Vec<u8>) -> Result<Project, Box<dyn std::error::Error>> {
         let mut archive = zip::ZipArchive::new(Cursor::new(zipdata))?;
+        let mut zip_data: Vec<File> = Vec::new();
 
-            let mut zip_data: Vec<File> = Vec::new();
+        for i in 0..archive.len() {
+            let mut f = archive.by_index(i).unwrap();
+            let mut buf = vec![];
+            f.read_to_end(&mut buf).unwrap();
 
-            for i in 0..archive.len() {
-                let mut f = archive.by_index(i).unwrap();
-                let mut buf = vec![];
-                f.read_to_end(&mut buf).unwrap();
+            let name = f.name();
+            zip_data.push(File {
+                name: name.into(),
+                data: buf,
+            });
+        }
 
-                let name = f.name();
-                zip_data.push(File {
-                    name: name.into(),
-                    data: buf,
-                });
-            }
-
-        let project = Project { zip_data: zip_data };
-        Ok(project)
+        Ok(Project { zip_data: zip_data })
     }
 }
