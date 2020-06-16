@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tour - Iced</title>
+    <style>
+      #root {
+	height: 100vh;
+	width: 100vw;
+	overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+	<input type="file" />
+	<p>Ready.</p>
+	<p>Open the console, hit "Performance", and the record button to start profiling.</p>
+	<p>Then drag and drop a zip file or choose from above.</p>
+    </div>
+    <script type="module">
+      import init, { WasmMain } from "./crc32fast-repro.js";
+
+      const body = document.getElementsByTagName('body')[0];
+      body.ondragover = (e) => {
+	e.preventDefault();
+      }
+      body.ondrop = (e) => {
+	e.preventDefault();
+        const files = Array.from(e.dataTransfer.files);
+      	run(files);
+      };
+
+      const input = document.getElementsByTagName('input')[0]
+      input.onchange = (e) => {
+        const files = Array.from(e.target.files);
+      	run(files);
+      }
+
+      const run = (files) => {
+	if (files.length !== 1) {
+	  return;
+	}
+
+	const reader = new FileReader();
+	reader.readAsArrayBuffer(files[0]);
+
+	reader.onload = function (evt) {
+	  const data = evt.target.result;
+	  console.log("initializing wasm zipping");
+	  WasmMain.new(new Uint8Array(data));
+	  console.log("initialized wasm zipping");
+	}
+      }
+
+      init();
+    </script>
+  </body>
+</html>

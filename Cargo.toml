@@ -1,0 +1,20 @@
+[package]
+name = "crc32fast-repro"
+version = "0.1.0"
+authors = ["Tony Holdstock-Brown <tonyhb@gmail.com>"]
+edition = "2018"
+
+[profile.release]
+debug = true
+
+[target.'cfg(all(target_arch = "wasm32", not(cargo_web)))'.dependencies]
+web-sys = { version = "0.3", features = ["console"] }
+js-sys = "0.3.40"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+stdweb = "0.4.20"
+wasm-bindgen = "0.2"
+zip = { version = "0.5", default-features = false, features = ["deflate"] }
+simple-error = "0.2"
